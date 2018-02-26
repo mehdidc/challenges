@@ -1,5 +1,7 @@
 import numpy as np
 import re
+import uuid
+from sklearn.metrics import roc_auc_score
 from gensim.models.wrappers import FastText
 from keras.layers import *
 from keras.optimizers import Adam
@@ -50,6 +52,14 @@ def fe(doc):
     x[0:len(s)] = np.array([ft[a] for a in s])
     return x
 
+def avg_auc(clf, X, y):
+    aucs = []
+    y_pred = clf.predict_proba(X)
+    for i in range(y.shape[1]):
+        aucs.append(roc_auc_score(y[:, i], y_pred[i][:, 1]))
+    return np.mean(aucs)
+
+
 class Classifier:
 
     def __init__(self):
@@ -62,6 +72,7 @@ class Classifier:
         model = Model(inputs=inp, outputs=out)
         opt = Adam(lr={lr})
         model.compile(loss='binary_crossentropy', optimizer=opt)
+        self.model = model
         def gen():
             while True:
                 for i in range(0, len(X), batch_size):
@@ -70,9 +81,15 @@ class Classifier:
                     xb = [fe(s) for s in xb]
                     xb = np.array(xb)
                     yield xb, yb
+                #auc = avg_auc(self, X, y)
+                #print('Train auc : ' + str(auc))
+
         steps_per_epoch = len(X) // batch_size
         model.fit_generator(gen(), steps_per_epoch=steps_per_epoch, epochs={epochs})
-        self.model = model
+        id_ = str(uuid.uuid4())
+        filename = '.cache/gru' + id_ + '.h5'
+        print('Saving the model into ' + filename)
+        self.model.save(filename)
     
     def predict(self, X):
         pr = self.predict_proba(X)
@@ -92,6 +109,6 @@ class Classifier:
         y = np.concatenate(yl, axis=0)
         out = []
         for i in range(y.shape[1]):
-            o = np.vstack(1 - y[:, i], y[:, i]).T
+            o = np.vstack((1 - y[:, i], y[:, i])).T
             out.append(o)
         return out
