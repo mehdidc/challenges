@@ -15,12 +15,12 @@ def tfidf():
         'info': params,
     }
 
+
 def gru():
-    rng  = np.random
     params = {
         'nb_units': 100,
         'lr': 1e-3,
-        'epochs': 1,
+        'epochs': 10,
         'batch_size': 64,
     }
     code = open('models/gru.py').read()

@@ -3,6 +3,29 @@ from sklearn.metrics import roc_auc_score
 import pandas as pd
 import numpy as np
 
+def submit(**kw):
+    summary = kw['summary']
+    filename = 'results/{}.csv'.format(summary)
+    print('Submitting to {}...'.format(filename))
+    out = kw['out']
+    models = out['models']
+    clf = models['final']
+    df = pd.read_csv('data/test.csv')
+    X = df['comment_text'].values
+    ids = df['id'].values
+    col = {}
+    col['id'] = ids
+    ypred = clf.predict_proba(X)
+    col['toxic'] = ypred[0][:, 1]
+    col['severe_toxic'] = ypred[1][:, 1]
+    col['obscene'] = ypred[2][:, 1]
+    col['threat'] = ypred[3][:, 1]
+    col['insult'] = ypred[4][:, 1]
+    col['identity_hate'] = ypred[5][:, 1]
+    df = pd.DataFrame(col)
+    df.to_csv(filename, index=False)
+
+
 problem = {
     'name': 'toxicity',
     'workflow': 'miniramp.workflows.classification',
@@ -21,7 +44,11 @@ problem = {
     'scores' : [
         'challenges.toxicity.avg_auc',
     ],
+    'triggers':{
+        'post_train': submit
+    }
 }
+
 
 def data():
     return _load_train('data/train.csv')
