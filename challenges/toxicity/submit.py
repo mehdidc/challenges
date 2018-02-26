@@ -2,7 +2,7 @@ import pandas as pd
 import cloudpickle
 from clize import run
 
-def submit(filename, *, out='out.csv'):
+def submit(filename, *, out=''):
     with open(filename, 'rb') as fd:
         models = cloudpickle.load(fd)
     clf = models['final']
@@ -20,6 +20,10 @@ def submit(filename, *, out='out.csv'):
     col['insult'] = ypred[4][:, 1]
     col['identity_hate'] = ypred[5][:, 1]
     df = pd.DataFrame(col)
+    if out == '':
+        name, ext = filename.split('.')
+        ext = 'csv'
+        out = name + '.' + ext
     df.to_csv(out, index=False)
 
 if __name__ == '__main__':

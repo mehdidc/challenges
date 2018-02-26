@@ -11,10 +11,10 @@ problem = {
     },
     'data': 'challenges.toxicity.data',
     'validation' : {
-        'name': 'miniramp.validation.shuffle_split',
+        'name': 'miniramp.validation.kfold',
         'params':{
-            'n_splits': 2,
-            'test_size': 0.1,
+            'n_splits': 5,
+            'shuffle': True,
             'random_state': 42,
         }
     },
@@ -28,11 +28,10 @@ def data():
 
 def avg_auc(clf, X, y):
     aucs = []
-    y_pred = clf.predict(X)
+    y_pred = clf.predict_proba(X)
     for i in range(y.shape[1]):
-        aucs.append(roc_auc_score(y[:, i], y_pred[:, i]))
+        aucs.append(roc_auc_score(y[:, i], y_pred[i][:, 1]))
     return np.mean(aucs)
-
 
 def _load_train(filename):
     df = pd.read_csv(filename)
@@ -44,7 +43,7 @@ def _load_train(filename):
     np.random.shuffle(indices)
     X = X[indices]
     y = y[indices]
-    nb_train = int(len(X) * 0.7)
+    nb_train = int(len(X) * 0.5)
     X_train, y_train = X[0:nb_train], y[0:nb_train]
     X_test, y_test = X[nb_train:], y[nb_train:]
     return (X_train, y_train), (X_test, y_test)
