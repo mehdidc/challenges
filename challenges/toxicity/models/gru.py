@@ -1,6 +1,5 @@
 import numpy as np
 import re
-import uuid
 from sklearn.metrics import roc_auc_score
 from gensim.models.wrappers import FastText
 from keras.layers import *
@@ -8,12 +7,12 @@ from keras.optimizers import Adam
 from keras.models import Model
 
 ft = FastText.load_fasttext_format('wiki.en.bin')
-#ft = None
 max_length = 100
 nb_outputs = 6
 vec_size = 300
 batch_size = {batch_size}
-
+bidirectional = {bidirectional}
+nb_layers = {nb_layers}
 
 def normalize(s):
     """
@@ -49,7 +48,8 @@ def fe(doc):
     s = [a.strip() for a in s]
     s = [a for a in s if a in ft]
     x = np.zeros((max_length, vec_size))
-    x[0:len(s)] = np.array([ft[a] for a in s])
+    if len(s):
+        x[0:len(s)] = np.array([ft[a] for a in s])
     return x
 
 def avg_auc(clf, X, y):
@@ -67,7 +67,10 @@ class Classifier:
 
     def fit(self, X, y):
         inp = Input(shape=(max_length, vec_size))
-        x = GRU({nb_units})(inp)
+        f = GRU({nb_units}, dropout={dropout})
+        if bidirectional:
+            f = Bidirectional(f)
+        x = f(inp)
         out = Dense(nb_outputs, activation='sigmoid')(x)
         model = Model(inputs=inp, outputs=out)
         opt = Adam(lr={lr})
@@ -86,15 +89,13 @@ class Classifier:
 
         steps_per_epoch = len(X) // batch_size
         model.fit_generator(gen(), steps_per_epoch=steps_per_epoch, epochs={epochs})
-        id_ = str(uuid.uuid4())
-        filename = '.cache/gru' + id_ + '.h5'
-        print('Saving the model into ' + filename)
-        self.model.save(filename)
+        #print('Saving the model into ' + filename)
+        #self.model.save(filename)
     
     def predict(self, X):
         pr = self.predict_proba(X)
         pr = np.array(pr)#6,ex,2
-        pr = pr.transpose((1, 0, 2))
+        pr = pr.transpose((3, 0, 2))
         pr = pr[:, :, 1]
         return (pr > 0.5).astype('float32')
 

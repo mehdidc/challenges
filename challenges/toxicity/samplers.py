@@ -22,6 +22,9 @@ def gru():
         'lr': 1e-3,
         'epochs': 10,
         'batch_size': 64,
+        'dropout': 0.5,
+        'nb_layers': 1,
+        'bidirectional': True,
     }
     code = open('models/gru.py').read()
     code = code.format(**params)
